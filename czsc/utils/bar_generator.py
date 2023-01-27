@@ -82,12 +82,17 @@ class BarGenerator:
     def __init__(self, base_freq: str, freqs: List[str], max_count: int = 5000):
         self.symbol = None
         self.end_dt = None
+        # 设置基础周期
         self.base_freq = base_freq
         self.max_count = max_count
         self.freqs = freqs
+        # 要组合的周期的RawBar集合
         self.bars = {v: [] for v in self.freqs}
+        # 在周期枚举中新增基础周期
         self.bars.update({base_freq: []})
+        #
         self.freq_map = {f.value: f for _, f in Freq.__members__.items()}
+        # K线周期约束校验
         self.__validate_freq_params()
 
     def __validate_freq_params(self):
@@ -132,8 +137,11 @@ class BarGenerator:
         :param freq: 目标周期
         :return:
         """
+
+        # 目标周期对应bar的结束时间。
         freq_edt = freq_end_time(bar.dt, freq)
 
+        # 如果对应周期的数据为空，放置RarBar到集合中，且结束日期为周期对应的结束日期
         if not self.bars[freq.value]:
             bar_ = RawBar(symbol=bar.symbol, freq=freq, dt=freq_edt, id=0, open=bar.open,
                           close=bar.close, high=bar.high, low=bar.low, vol=bar.vol, amount=bar.amount)
@@ -141,12 +149,15 @@ class BarGenerator:
             return
 
         last: RawBar = self.bars[freq.value][-1]
+
+        # 如果周期结束时间与当前周期的最后一根不相等
         if freq_edt != self.bars[freq.value][-1].dt:
             bar_ = RawBar(symbol=bar.symbol, freq=freq, dt=freq_edt, id=last.id + 1, open=bar.open,
                           close=bar.close, high=bar.high, low=bar.low, vol=bar.vol, amount=bar.amount)
             self.bars[freq.value].append(bar_)
 
         else:
+            # 累计成交额，生成新的RawBar替换最后一根K线（注意最高、最低的处理）
             if last.amount:
                 amount = last.amount + bar.amount
             else:

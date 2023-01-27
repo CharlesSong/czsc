@@ -66,10 +66,12 @@ def check_fx(k1: NewBar, k2: NewBar, k3: NewBar):
     """查找分型"""
     fx = None
     if k1.high < k2.high > k3.high and k1.low < k2.low > k3.low:
+        # 顶分型
         fx = FX(symbol=k1.symbol, dt=k2.dt, mark=Mark.G, high=k2.high,
                 low=k2.low, fx=k2.high, elements=[k1, k2, k3])
 
     if k1.low > k2.low < k3.low and k1.high > k2.high < k3.high:
+        # 底分型
         fx = FX(symbol=k1.symbol, dt=k2.dt, mark=Mark.D, high=k2.high,
                 low=k2.low, fx=k2.low, elements=[k1, k2, k3])
 
@@ -115,12 +117,14 @@ def check_bi(bars: List[NewBar], benchmark: float = None):
     try:
         if fxs[0].mark == Mark.D:
             direction = Direction.Up
+            # 分型会有多个；需要查找第一个分型的相反分型，条件是时间要大、high要高
             fxs_b = [x for x in fxs if x.mark == Mark.G and x.dt > fx_a.dt and x.fx > fx_a.fx]
             if not fxs_b:
                 return None, bars
 
             fx_b = fxs_b[0]
             for fx in fxs_b[1:]:
+                # 找到最高的那个分型
                 if fx.high >= fx_b.high:
                     fx_b = fx
 
@@ -132,6 +136,7 @@ def check_bi(bars: List[NewBar], benchmark: float = None):
 
             fx_b = fxs_b[0]
             for fx in fxs_b[1:]:
+                # 找到最低的分型
                 if fx.low <= fx_b.low:
                     fx_b = fx
         else:
@@ -162,6 +167,7 @@ def check_bi(bars: List[NewBar], benchmark: float = None):
         high_ubi = max([x.high for x in bars_b])
         if (bi.direction == Direction.Up and high_ubi > bi.high) \
                 or (bi.direction == Direction.Down and low_ubi < bi.low):
+            # 如果成向上笔时，比的高点小于后续K线的最高点，或者 向下笔时，笔的低点大于后续的最低点，说明笔不成立。
             return None, bars
         else:
             return bi, bars_b
@@ -223,10 +229,13 @@ class CZSC:
             self.bars_ubi = bars_ubi_
             return
 
+        # 超过100根K线未形成笔，进行提示
         if self.verbose and len(bars_ubi) > 100:
             logger.info(f"{self.symbol} - {self.freq} - {bars_ubi[-1].dt} 未完成笔延伸数量: {len(bars_ubi)}")
 
         if envs.get_bi_change_th() > 0.5 and len(self.bi_list) >= 5:
+            # power_price 价差粒度，round(abs(self.fx_b.fx - self.fx_a.fx), 2)=四舍五入（分型开始、结束的差值的绝对值，保留2位小数）
+            # 倒一笔的价差力度与最近笔的价差力度平均值，取小
             benchmark = min(self.bi_list[-1].power_price, np.mean([x.power_price for x in self.bi_list[-5:]]))
         else:
             benchmark = None
@@ -254,7 +263,7 @@ class CZSC:
             self.bars_raw.append(bar)
             last_bars = [bar]
         else:
-            # 当前 bar 是上一根 bar 的时间延伸
+            # 当前 bar 是上一根 bar 的时间延伸（什么情况下是延伸？实盘时，当前周期的K线未走完；或者是历史数据有问题时）
             self.bars_raw[-1] = bar
             if len(self.bars_ubi) >= 3:
                 edt = self.bars_ubi[-2].dt

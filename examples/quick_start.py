@@ -8,10 +8,11 @@ describe: 以 Tushare 数据为例编写快速入门样例
 import os
 import pandas as pd
 from collections import OrderedDict
-from czsc import CZSC, CzscAdvancedTrader, Freq
+from czsc import CZSC, Freq
 from czsc.utils import BarGenerator
 from czsc import signals
 from czsc.data import TsDataCache
+from czsc.traders.base import CzscAdvancedTrader
 
 os.environ['czsc_verbose'] = "1"        # 是否输出详细执行信息，0 不输出，1 输出
 os.environ['czsc_min_bi_len'] = "6"     # 通过环境变量设定最小笔长度，6 对应新笔定义，7 对应老笔定义
@@ -21,17 +22,18 @@ pd.set_option('display.max_columns', 20)
 
 # 需要先设置 Tushare Token，否则报错，无法执行
 # TsDataCache 是统一的 tushare 数据缓存入口，适用于需要重复调用接口的场景
-dc = TsDataCache(data_path=r"C:\ts_data", sdt='2000-01-01', edt='2022-02-18')
+dc = TsDataCache(data_path=r"E:\ts_data", sdt='2012-01-01', edt='2022-10-18')
 
 
 # 在浏览器中查看单标的单级别的分型、笔识别结果
-bars = dc.pro_bar(ts_code='000001.SH', asset='I', start_date='20150101', end_date="20220427", freq='D')
-c = CZSC(bars)
-c.open_in_browser()
+# bars = dc.pro_bar(ts_code='000001.SH', asset='I', start_date='20150101', end_date="20220427", freq='D')
+bars = dc.pro_bar_minutes(ts_code='000001.SH', asset='I', sdt='20150101 09:30', edt="20221001 15:00", freq='15min', adj='hfq')
+# c = CZSC(bars)
+# c.open_in_browser()
 
 
 # K线合成器，这是多级别联立分析的数据支撑。示例为从日线逐K合成周线、月线
-bg = BarGenerator(base_freq='日线', freqs=['周线', '月线'], max_count=5000)
+bg = BarGenerator(base_freq='15分钟', freqs=['30分钟', '60分钟', '日线', '周线', '月线'], max_count=5000)
 for bar in bars:
     bg.update(bar)
 

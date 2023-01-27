@@ -82,10 +82,15 @@ class NewBar:
 class FX:
     symbol: str
     dt: datetime
+    # 分型类型，G：顶分型；D：底分型
     mark: Mark
+    # 分型中K线的高点
     high: [float, int]
+    # 分型中K线的低点
     low: [float, int]
+    # 顶分型时，是high；底分型时是low
     fx: [float, int]
+    # 组成分型的Bar
     elements: List = None
     cache: dict = None  # cache 用户缓存
 

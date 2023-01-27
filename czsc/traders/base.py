@@ -217,14 +217,19 @@ class CzscAdvancedTrader(CzscSignals):
         """
         self.name = "CzscAdvancedTrader"
         self.strategy = strategy
+        # 策略; 手段; 招数; 战术; 兵法;
         tactic = self.strategy("") if strategy else {}
+        # 获取信号
         self.get_signals: Callable = tactic.get('get_signals')
         self.tactic = tactic
         self.long_events: List[Event] = tactic.get('long_events', None)
+        # 多头持仓对象和交易事件
         self.long_pos: PositionLong = tactic.get('long_pos', None)
+        # 记录基础周期结束时间对应的多头仓位信息
         self.long_holds = []                    # 记录基础周期结束时间对应的多头仓位信息
         self.short_events: List[Event] = tactic.get('short_events', None)
         self.short_pos: PositionShort = tactic.get('short_pos', None)
+        # 记录基础周期结束时间对应的空头仓位信息
         self.short_holds = []                   # 记录基础周期结束时间对应的空头仓位信息
         super().__init__(bg, get_signals=self.get_signals)
 
